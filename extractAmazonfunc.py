@@ -9,7 +9,7 @@ urllib2.install_opener(opener)
 
 client = MongoClient()
 db = client["motherboard"]
-collection = db['links']
+collection = db['results']
 
 def linkExtractor(urltoopen, tag1, attrib1, attrib1value, tag2 ,attrib2, attrib2value, finalAttrib):
 	url = urllib2.urlopen(urltoopen).read()
@@ -30,15 +30,41 @@ def forPrinter(x):
 		print x[i]
 
 def pageProductExtractor(linkArray):
-	for i in range(1,len(linkArray)):
+	entry = {}
+	for i in range(0,len(linkArray)):
 		url2 = urllib2.urlopen(linkArray[i]).read()
 		soup2 = bs(url2)
 		mainContent = soup2.find("div",{"class":"centerColAlign"})
+
+		#Finding the name
 		nameDiv = mainContent.find(id="title_feature_div")
 		nameSpan = nameDiv.find("span",{"class":"a-size-large"})
-		name = nameSpan.getText()
-		print name
-	
+		entry["srNo"] = i
+		entry["name"] = nameSpan.getText()
+		
+		#finding the price
+		try:
+			priceDiv = mainContent.find(id="price_feature_div")
+			priceSpan = priceDiv.find("span",{"class":"a-size-medium"})
+			price = priceSpan.getText()
+			entry["price"] = priceSpan.getText()
+		except:
+			priceDiv = mainContent.find(id="olp_feature_div")
+			priceSpan = priceDiv.find("span",{"class":"a-color-price"})
+			price = priceSpan.getText()
+			entry["price"] = priceSpan.getText()
+
+		#finding the details
+		feature = []
+		detailsDiv = mainContent.find(id="featurebullets_feature_div")
+		detailsSpan = detailsDiv.findAll("span",{"class":"a-list-item"})
+		for j in range(0,len(detailsSpan)):
+			feature.append(detailsSpan[j].getText())
+		entry["details"] = feature
+
+		db.results.insert(entry)
+		print str(i)+":) done!!"
+		entry = {}
 
 url = "http://www.amazon.com/s/ref=nb_sb_ss_c_0_7?url=search-alias%3Delectronics&field-keywords=motherboard&sprefix=motherboard%2Cundefined%2C417"
 links = linkExtractor(url,"li","class","s-result-item","a","class","a-link-normal","href")
