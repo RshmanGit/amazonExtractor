@@ -14,20 +14,34 @@ collection = db['results']
 def linkExtractor(urltoopen, tag1, attrib1, attrib1value, tag2 ,attrib2, attrib2value, finalAttrib):
 	url = urllib2.urlopen(urltoopen).read()
 	soup = bs(url)
+	lastPageTag = soup.find("span",{"class":"pagnDisabled"})
+	lastPage = int(lastPageTag.getText())
 
-	result = soup.findAll(tag1,{attrib1:attrib1value})
 	apple = []
 
-	for i in range(0,len(result)):
-		resultDetails = result[i].find(tag2,{attrib2:attrib2value})
-		link = resultDetails[finalAttrib]
-		apple.append(link)
+	#inside the loop
+	for j in range(0,lastPage):
+
+		result = soup.findAll(tag1,{attrib1:attrib1value})
+
+		for i in range(0,len(result)):
+			resultDetails = result[i].find(tag2,{attrib2:attrib2value})
+			link = resultDetails[finalAttrib]
+			apple.append(link)
+
+		nextLinkATag = soup.find("span",{"class":"pagnRA"})
+		nextLink =  "http://www.amazon.com"+nextLinkATag.a['href']
+		url = urllib2.urlopen(nextLink).read()
+		soup = bs(url)
+
+	#the loop ends
 
 	return apple
 
 def forPrinter(x):
 	for i in range(1,len(x)):
-		print x[i]
+		print i
+		#print x[i]
 
 def pageProductExtractor(linkArray):
 	entry = {}
@@ -63,7 +77,6 @@ def pageProductExtractor(linkArray):
 		entry["details"] = feature
 
 		db.results.insert(entry)
-		print str(i)+":) done!!"
 		entry = {}
 
 url = "http://www.amazon.com/s/ref=nb_sb_ss_c_0_7?url=search-alias%3Delectronics&field-keywords=motherboard&sprefix=motherboard%2Cundefined%2C417"
